@@ -1,0 +1,16 @@
+// Warning: generated file; your changes could be lost when a new file is generated.
+#I __SOURCE_DIRECTORY__
+#r "System.ComponentModel.Composition.dll"
+#r "System.Core.dll"
+#r "System.dll"
+#r "System.Numerics.dll"
+#r "System.Xml.dll"
+#r "../../../packages/FSharp.Compiler.Service/lib/net45/FSharp.Compiler.Service.dll"
+#r "../../../packages/FSharp.Compiler.Service/lib/net45/FSharp.Compiler.Service.MSBuild.v12.dll"
+#r "../../../packages/Microsoft.Build/lib/net46/Microsoft.Build.dll"
+#r "../../../packages/Microsoft.Build.Framework/lib/net46/Microsoft.Build.Framework.dll"
+#r "../../../packages/Microsoft.Build.Tasks.Core/lib/net46/Microsoft.Build.Tasks.Core.dll"
+#r "../../../packages/Microsoft.Build.Utilities.Core/lib/net46/Microsoft.Build.Utilities.Core.dll"
+#r "../../../packages/System.Collections.Immutable/lib/netstandard1.0/System.Collections.Immutable.dll"
+#r "../../../packages/System.Reflection.Metadata/lib/netstandard1.1/System.Reflection.Metadata.dll"
+#r "../../../packages/System.Threading.Thread/ref/net46/System.Threading.Thread.dll"

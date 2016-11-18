@@ -1,18 +1,25 @@
-source https://nuget.org/api/v2
+source https://www.nuget.org/api/v2
+redirects: force
 
-nuget FSharp.Core redirects: force
+nuget FSharp.Core
+nuget FSharp.Compiler.Service
+nuget Microsoft.Build           preview
+nuget Microsoft.Build.Runtime   preview
 
 group Build
   source https://nuget.org/api/v2
-  
+
   nuget SourceLink.Fake
   nuget FAKE
   nuget FSharp.Formatting
 
   github fsharp/FAKE modules/Octokit/Octokit.fsx
 
+
+
+
 group Test
-  source https://nuget.org/api/v2
-  
-  nuget NUnit ~> 2
-  nuget NUnit.Runners ~> 2
+    source https://www.nuget.org/api/v2
+
+    nuget NUnit
+    nuget NUnit.Runners

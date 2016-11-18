@@ -1,0 +1,95 @@
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" />
+  
+  <PropertyGroup>
+    <Name>fsprojectile</Name>
+    <AssemblyName>fsprojectile</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp1.0</TargetFramework>
+    <DebugType>pdbonly</DebugType>
+    <DefineConstants>NETCORE</DefineConstants>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+  </PropertyGroup>
+  
+  
+  <PropertyGroup>
+    <Authors>Jared Hester</Authors>
+    <Version>0.0.1-alpha1</Version>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <None Include="..\fsprojectile\paket.references" >
+      <Link>"paket.references"</Link>
+    </None>
+    <Compile Include="..\fsprojectile\Prelude.fs">
+      <Link>"Prelude.fs"</Link>
+    </Compile>
+    <Compile Include="..\fsprojectile\Constants.fs" >
+          <Link>"Constants.fs"</Link>
+    </Compile>
+    <Compile Include="..\fsprojectile\FSharpProjectOptions.fs">
+          <Link>"FSharpProjectOptions.fs"</Link>
+    </Compile>
+    <Compile Include="..\fsprojectile\ProjectFileInfo.fs" >
+          <Link>"ProjectFileInfo.fs"</Link>
+    </Compile>
+    <Compile Include="..\fsprojectile\SolutionFileInfo.fs">
+          <Link>"SolutionFileInfo.fs"</Link>
+    </Compile>
+    <Compile Include="..\fsprojectile\Program.fs">
+          <Link>"Program.fs"</Link>
+    </Compile>
+    <None Include="..\fsprojectile\Scripts\load-references-release.fsx" >
+        <Link>"Scripts\load-references-release.fsx"</Link>
+    </None>
+    <None Include="..\fsprojectile\Scripts\load-project-release.fsx" >
+        <Link>"Scripts\load-project-release.fsx"</Link>
+    </None>
+    <None Include="..\fsprojectile\Scripts\load-references-debug.fsx">
+        <Link>"Scripts\load-references-debug.fsx"</Link>
+    </None>
+    <None Include="..\fsprojectile\Scripts\load-project-debug.fsx" >
+        <Link>"Scripts\load-project-debug.fsx"</Link>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.App">
+      <Version>1.0.1</Version>
+    </PackageReference>
+    <PackageReference Include="NETStandard.Library">
+      <Version>1.6.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.FSharp.Core.netcore">
+      <Version>1.0.0-alpha-161023</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Sdk">
+      <Version>1.0.0-alpha-20161104-2</Version>
+      <PrivateAssets>All</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="FSharp.NET.Sdk">
+      <Version>1.0.0-alpha-000007</Version>
+      <PrivateAssets>All</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Build">
+      <Version>15.1.0-preview-000370-00</Version>
+      <PrivateAssets>All</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Build.Runtime">
+      <Version>15.1.0-preview-000370-00</Version>
+      <PrivateAssets>All</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <DotNetCliToolReference Include="dotnet-compile-fsc">
+      <Version>1.0.0-preview2-020000</Version>
+    </DotNetCliToolReference>
+  </ItemGroup>
+  
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+
+</Project>
