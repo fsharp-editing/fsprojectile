@@ -1,0 +1,25 @@
+type project
+title
+    fsprojectile
+owners
+    Jared Hester
+authors 
+    Jared Hester
+projectUrl
+    https://github.com/fsharp-editing/fsprojectile/fsharp-editing/fsprojectile
+iconUrl
+    https://raw.githubusercontent.com/fsharp-editing/fsprojectile/master/docs/files/img/logo.png
+licenseUrl
+    https://github.com/fsharp-editing/fsprojectile/fsharp-editing/fsprojectile/blob/master/LICENSE.txt
+requireLicenseAcceptance
+    false
+copyright
+    Copyright 2015
+tags
+    F# MSBuild fsproj build project fsharp netcore tooling
+summary
+    Inspects .fsproj files for F# compiler options and project configuration metadata
+description
+    Inspects .fsproj files for F# compiler options and project configuration metadata
+
+
