@@ -29,6 +29,16 @@ let getFSharpProjectOptions (projectPath:string) =
     |> ProjectFileInfo.toFSharpProjectOptions (Dictionary())
     |> fst
 
+let doit = true
+let parseAlways = 
+    if doit then
+        [|  @"..\..\test-data\Sample_VS2013_FSharp_Portable_Library_net451_adjusted_to_profile259\Sample_VS2013_FSharp_Portable_Library_net451.fsproj"
+            @"..\..\test-data\Sample_VS2015_FSharp_Portable7_Library\Sample_VS2015_FSharp_Portable7_Library.fsproj"
+//            @"..\..\test-data\Sample_VS2015_FSharp_Portable47_Library\Sample_VS2015_FSharp_Portable47_Library.fsproj"
+//            @"..\..\test-data\Sample_VS2015_FSharp_Portable78_Library\Sample_VS2015_FSharp_Portable78_Library.fsproj"
+        |]
+    else
+        [||]
 
 [<EntryPoint>]
 let main argv =
@@ -45,8 +55,14 @@ let main argv =
         else
             
         let candidates =
-            paths |> Array.filter ^ fun path -> 
+            Array.append paths parseAlways
+            |> Array.filter ^ fun path -> not ^ String.IsNullOrWhiteSpace path
+            |> Array.filter ^ fun path -> 
+                
                 let path = Path.GetFullPath (unquote path)
+                if not ^ File.Exists path then
+                    printfn "no file found at '%s'" path
+
                 File.Exists path &&  Path.GetExtension path = ".fsproj"
 
         if candidates.Length = 0 then

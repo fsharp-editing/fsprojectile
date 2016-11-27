@@ -182,7 +182,8 @@ module ProjectFileInfo =
 
         let requestReferences =
             BuildRequestData (projectInstance,
-                [|  "ResolveAssemblyReferences"
+                [|  "ResolveReferences"
+                    "ResolveAssemblyReferences"
                     "ResolveProjectReferences"
                     "ResolveReferenceDependencies"
                 |])
@@ -197,7 +198,7 @@ module ProjectFileInfo =
                 |> Array.ofSeq
             else
                 [||]
-
+        
         let references =
             projectInstance.GetItems ItemName.ReferencePath
             |> Seq.filter (not<<isProjectReference)
