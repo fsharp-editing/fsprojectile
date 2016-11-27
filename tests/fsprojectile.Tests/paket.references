@@ -1,4 +1,8 @@
 FSharp.Core
+FSharp.Compiler.Service
+NUnit
+Microsoft.Build.Runtime
+System.Collections.Immutable
 group Test
 NUnit
 NUnit.Runners
