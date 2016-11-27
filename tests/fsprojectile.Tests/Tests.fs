@@ -17,10 +17,6 @@ Environment.SetEnvironmentVariable("MSBUILD_EXE_PATH", msbuildexe);;
 #else
 module fsprojectile.Tests
 #endif
-open System
-open System.IO
-
-
 
 let runningOnMono = try System.Type.GetType "Mono.Runtime" <> null with e ->  false
 
@@ -31,27 +27,43 @@ open FsUnit
 open Microsoft.FSharp.Compiler.SourceCodeServices
 open fsprojectile
 
+
 let normalizePath s = (new Uri(s)).LocalPath
 
 let checkOption (opts:string[]) s = 
     let found = "Found '"+s+"'"
     (if opts |> Array.exists (fun o -> o.EndsWith s) then found 
-        else 
-            sprintf "Failed to find '%s'\nDid Find:\n%s" s
-                        (String.concat "\n" opts)
-            
-            )
-       |> shouldEqual found
+        else sprintf "Failed to find '%s'\nDid Find:\n%s" s (String.concat "\n" opts))
+    |> shouldEqual found
+
 
 let checkOptionNotPresent (opts:string[]) s = 
     let found = "Found '"+s+"'"
     let notFound = "Did not expect to find '"+s+"'"
-    (if opts |> Array.exists (fun o -> o.EndsWith(s)) then found else notFound)
+    (if opts |> Array.exists (fun o -> o.EndsWith s) then found else notFound)
        |> shouldEqual notFound
 
-let getReferencedFilenames = Array.choose (fun (o:string) -> if o.StartsWith("-r:") then o.[3..] |> (Path.GetFileName >> Some) else None)
-let getReferencedFilenamesAndContainingFolders = Array.choose (fun (o:string) -> if o.StartsWith("-r:") then o.[3..] |> (fun r -> ((r |> Path.GetFileName), (r |> Path.GetDirectoryName |> Path.GetFileName)) |> Some) else None)
-let getOutputFile = Array.pick (fun (o:string) -> if o.StartsWith("--out:") then o.[6..] |> Some else None)
+
+let getReferencedFilenames = 
+    Array.choose ^ fun (o:string) -> 
+        if o.StartsWith "-r:" then 
+            o.[3..] |> (Path.GetFileName >> Some) 
+        else None
+
+
+let getReferencedFilenamesAndContainingFolders = 
+    Array.choose ^ fun (o:string) -> 
+        if o.StartsWith "-r:" then 
+            o.[3..] |> (fun r -> 
+                ((r |> Path.GetFileName), (r |> Path.GetDirectoryName |> Path.GetFileName)) |> Some) 
+        else None
+
+
+let getOutputFile = 
+    Array.pick ^ fun (o:string) -> 
+        if o.StartsWith "--out:" then 
+            o.[6..] |> Some 
+        else None
 
 
 #if INTERACTIVE
@@ -67,8 +79,8 @@ let getCompiledFilenames =
     Array.choose (fun (opt: string) -> 
         if opt.EndsWith ".fs" then 
             opt |> Path.GetFileName |> Some
-        else None)
-    >> Array.distinct
+        else None) >> Array.distinct
+
 
 [<Test>]
 let ``Project file parsing example 1 Default Configuration`` () = 
@@ -84,6 +96,7 @@ let ``Project file parsing example 1 Default Configuration`` () =
     checkOption options.OtherOptions "--simpleresolution"
     checkOption options.OtherOptions "--noframework"
 
+
 //[<Test>]
 //let ``Project file parsing example 1 Release Configuration`` () = 
 //    let projectFile = __SOURCE_DIRECTORY__ + @"/FSharp.Compiler.Service.Tests.fsproj"
@@ -96,6 +109,7 @@ let ``Project file parsing example 1 Default Configuration`` () =
 //    checkOption options.OtherOptions "--define:TRACE"
 //    checkOptionNotPresent options.OtherOptions "--define:DEBUG"
 //    checkOption options.OtherOptions "--debug:pdbonly"
+
 
 [<Test>]
 let ``Project file parsing example 1 Default configuration relative path`` () = 
@@ -112,8 +126,9 @@ let ``Project file parsing example 1 Default configuration relative path`` () =
     checkOption options.OtherOptions "--simpleresolution"
     checkOption options.OtherOptions "--noframework"
 
+
 [<Test>]
-let ``Project file parsing VS2013_FSharp_Portable_Library_net45``() = 
+let ``Project file parsing VS2013 FSharp Portable Library net45``() = 
     let projectFile = __SOURCE_DIRECTORY__ + @"../../../test-data/Sample_VS2013_FSharp_Portable_Library_net45/Sample_VS2013_FSharp_Portable_Library_net45.fsproj"
     let options = getFSharpProjectOptions projectFile
 
@@ -126,8 +141,9 @@ let ``Project file parsing VS2013_FSharp_Portable_Library_net45``() =
     checkOption options.OtherOptions "System.Net.Requests.dll"
     checkOption options.OtherOptions "System.Xml.XmlSerializer.dll"
 
+
 [<Test>]
-let ``Project file parsing Sample_VS2013_FSharp_Portable_Library_net451_adjusted_to_profile78``() = 
+let ``Project file parsing VS2013 FSharp Portable Library net451 adjusted to profile78``() = 
     let projectFile = __SOURCE_DIRECTORY__ + @"../../../test-data/Sample_VS2013_FSharp_Portable_Library_net451_adjusted_to_profile78/Sample_VS2013_FSharp_Portable_Library_net451.fsproj"
     Directory.SetCurrentDirectory(__SOURCE_DIRECTORY__ + @"../../../test-data/Sample_VS2013_FSharp_Portable_Library_net451_adjusted_to_profile78/")
     let options = getFSharpProjectOptions projectFile
@@ -143,16 +159,18 @@ let ``Project file parsing Sample_VS2013_FSharp_Portable_Library_net451_adjusted
 
 [<Test>]
 let ``Project file parsing -- compile files 1``() =
-  let opts = getFSharpProjectOptions(__SOURCE_DIRECTORY__ + @"../../../test-data/Test1.fsproj")
-  CollectionAssert.AreEqual (["Test1File2.fs"; "Test1File1.fs"], opts.ProjectFileNames |> Array.map Path.GetFileName)
-  CollectionAssert.IsEmpty (getCompiledFilenames opts.OtherOptions)
+    let opts = getFSharpProjectOptions(__SOURCE_DIRECTORY__ + @"../../../test-data/Test1.fsproj")
+    CollectionAssert.AreEqual (["Test1File2.fs"; "Test1File1.fs"], opts.ProjectFileNames |> Array.map Path.GetFileName)
+    CollectionAssert.IsEmpty (getCompiledFilenames opts.OtherOptions)
+
 
 [<Test>]
 let ``Project file parsing -- compile files 2``() =
-  let opts = getFSharpProjectOptions(__SOURCE_DIRECTORY__ + @"../../../test-data/Test2.fsproj")
+    let opts = getFSharpProjectOptions(__SOURCE_DIRECTORY__ + @"../../../test-data/Test2.fsproj")
 
-  CollectionAssert.AreEqual (["Test2File2.fs"; "Test2File1.fs"], opts.ProjectFileNames |> Array.map Path.GetFileName)
-  CollectionAssert.IsEmpty (getCompiledFilenames opts.OtherOptions)
+    CollectionAssert.AreEqual (["Test2File2.fs"; "Test2File1.fs"], opts.ProjectFileNames |> Array.map Path.GetFileName)
+    CollectionAssert.IsEmpty (getCompiledFilenames opts.OtherOptions)
+
 
 //[<Test>]
 //let ``Project file parsing -- bad project file``() =
@@ -166,33 +184,36 @@ let ``Project file parsing -- compile files 2``() =
 //  let log = snd (getFSharpProjectOptionsLogged(f, enableLogging=true))
 //  log.[f] |> should contain "System.IO.FileNotFoundException"
 
+
 [<Test>]
 let ``Project file parsing -- output file``() =
-  let p = getFSharpProjectOptions(__SOURCE_DIRECTORY__ + @"../../../test-data/Test1.fsproj")
+    let p = getFSharpProjectOptions ^ __SOURCE_DIRECTORY__ + @"../../../test-data/Test1.fsproj"
 
-  let expectedOutputPath =
-    normalizePath (__SOURCE_DIRECTORY__ + "/data/Test1/bin/Debug/Test1.dll")
+    let expectedOutputPath =
+        normalizePath ^ __SOURCE_DIRECTORY__ + "/data/Test1/bin/Debug/Test1.dll"
 
-  p.OtherOptions
-  |> getOutputFile
-  |> shouldEqual expectedOutputPath
+    p.OtherOptions
+    |> getOutputFile
+    |> shouldEqual expectedOutputPath
+
 
 [<Test>]
 let ``Project file parsing -- references``() =
-  let p = getFSharpProjectOptions(__SOURCE_DIRECTORY__ + @"../../../test-data/Test1.fsproj")
+    let p = getFSharpProjectOptions ^ __SOURCE_DIRECTORY__ + @"../../../test-data/Test1.fsproj"
 
-  let references = getReferencedFilenames p.OtherOptions
-  checkOption references "FSharp.Core.dll"
-  checkOption references "mscorlib.dll"
-  checkOption references "System.Core.dll"
-  checkOption references "System.dll"
-  printfn "Project file parsing -- references: references = %A" references
-  references |> shouldHaveLength 4
-  p.ReferencedProjects |> shouldBeEmpty
+    let references = getReferencedFilenames p.OtherOptions
+    checkOption references "FSharp.Core.dll"
+    checkOption references "mscorlib.dll"
+    checkOption references "System.Core.dll"
+    checkOption references "System.dll"
+    printfn "Project file parsing -- references: references = %A" references
+    references |> shouldHaveLength 4
+    p.ReferencedProjects |> shouldBeEmpty
+
 
 [<Test>]
 let ``Project file parsing -- 2nd level references``() =
-  let p = getFSharpProjectOptions(__SOURCE_DIRECTORY__ + @"../../../test-data/Test2.fsproj")
+  let p = getFSharpProjectOptions ^ __SOURCE_DIRECTORY__ + @"../../../test-data/Test2.fsproj"
   printfn "%A" p
 
   let references = getReferencedFilenames p.OtherOptions
@@ -204,27 +225,29 @@ let ``Project file parsing -- 2nd level references``() =
   printfn "Project file parsing -- references: references = %A" references
   references |> shouldHaveLength 5
   p.ReferencedProjects |> shouldHaveLength 1
-  (snd p.ReferencedProjects.[0]).ProjectFileName |> shouldContainText (normalizePath (__SOURCE_DIRECTORY__ + @"../../../test-data/Test1.fsproj"))
+  (snd p.ReferencedProjects.[0]).ProjectFileName |> shouldContainText (normalizePath ^ __SOURCE_DIRECTORY__ + @"../../../test-data/Test1.fsproj")
+
 
 [<Test>]
 let ``Project file parsing -- reference project output file``() =
-  let p = getFSharpProjectOptions(__SOURCE_DIRECTORY__ + @"../../../test-data/DifferingOutputDir/Dir2/Test2.fsproj")
+    let p = getFSharpProjectOptions ^ __SOURCE_DIRECTORY__ + @"../../../test-data/DifferingOutputDir/Dir2/Test2.fsproj"
 
-  let expectedOutputPath =
-    normalizePath (__SOURCE_DIRECTORY__ + "../../../test-data/DifferingOutputDir/Dir2/OutputDir2/Test2.exe")
+    let expectedOutputPath =
+        normalizePath ^ __SOURCE_DIRECTORY__ + "../../../test-data/DifferingOutputDir/Dir2/OutputDir2/Test2.exe"
 
-  p.OtherOptions
-  |> getOutputFile
-  |> shouldEqual expectedOutputPath
+    p.OtherOptions
+    |> getOutputFile
+    |> shouldEqual expectedOutputPath
 
-  p.OtherOptions
-  |> Array.choose (fun (o:string) -> if o.StartsWith("-r:") then o.[3..] |> Some else None)
-  |> shouldContain (normalizePath (__SOURCE_DIRECTORY__ + @"../../../test-data/DifferingOutputDir/Dir1/OutputDir1/Test1.dll"))
+    p.OtherOptions
+    |> Array.choose (fun (o:string) -> if o.StartsWith "-r:" then o.[3..] |> Some else None)
+    |> shouldContain (normalizePath (__SOURCE_DIRECTORY__ + @"../../../test-data/DifferingOutputDir/Dir1/OutputDir1/Test1.dll"))
+
 
 [<Test>]
 let ``Project file parsing -- Tools Version 12``() =
-  let opts = getFSharpProjectOptions(__SOURCE_DIRECTORY__ + @"../../../test-data/ToolsVersion12.fsproj")
-  checkOption (getReferencedFilenames opts.OtherOptions) "System.Core.dll"
+    let opts = getFSharpProjectOptions ^ __SOURCE_DIRECTORY__ + @"../../../test-data/ToolsVersion12.fsproj"
+    checkOption (getReferencedFilenames opts.OtherOptions) "System.Core.dll"
 //
 //[<Test>]
 //let ``Project file parsing -- Logging``() =
@@ -232,39 +255,43 @@ let ``Project file parsing -- Tools Version 12``() =
 //  let _, logMap = getFSharpProjectOptionsLogged(projectFileName, enableLogging=true)
 //  let log = logMap.[projectFileName]
 
-  if runningOnMono then
-    Assert.That(log, Does.Contain("Reference System.Core resolved"))
-    Assert.That(log, Does.Contain("Using task ResolveAssemblyReference from Microsoft.Build.Tasks.ResolveAssemblyReference"))
-  else
-    Assert.That(log, Does.Contain("""Using "ResolveAssemblyReference" task from assembly "Microsoft.Build.Tasks.Core, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"."""))
+    if runningOnMono then
+        Assert.That(log, Does.Contain "Reference System.Core resolved")
+        Assert.That(log, Does.Contain "Using task ResolveAssemblyReference from Microsoft.Build.Tasks.ResolveAssemblyReference")
+    else
+        Assert.That(log, Does.Contain("""Using "ResolveAssemblyReference" task from assembly "Microsoft.Build.Tasks.Core, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"."""))
+
 
 [<Test>]
 let ``Project file parsing -- Full path``() =
-  let f = normalizePath (__SOURCE_DIRECTORY__ + @"../../../test-data/ToolsVersion12.fsproj")
-  let p = getFSharpProjectOptions(f)
-  p.ProjectFileName |> shouldEqual f
+    let f = normalizePath ^ __SOURCE_DIRECTORY__ + @"../../../test-data/ToolsVersion12.fsproj"
+    let p = getFSharpProjectOptions f
+    p.ProjectFileName |> shouldEqual f
+
 
 [<Test>]
 let ``Project file parsing -- project references``() =
-  let f1 = normalizePath (__SOURCE_DIRECTORY__ + @"../../../test-data/Test1.fsproj")
-  let f2 = normalizePath (__SOURCE_DIRECTORY__ + @"../../../test-data/Test2.fsproj")
-  let options = getFSharpProjectOptions(f2)
+    let f1 = normalizePath ^ __SOURCE_DIRECTORY__ + @"../../../test-data/Test1.fsproj"
+    let f2 = normalizePath ^ __SOURCE_DIRECTORY__ + @"../../../test-data/Test2.fsproj"
+    let options = getFSharpProjectOptions f2
 
-  options.ReferencedProjects |> shouldHaveLength 1
-  fst options.ReferencedProjects.[0] |> shouldEndWith "Test1.dll"
-  snd options.ReferencedProjects.[0] |> shouldEqual (getFSharpProjectOptions(f1))
+    options.ReferencedProjects |> shouldHaveLength 1
+    fst options.ReferencedProjects.[0] |> shouldEndWith "Test1.dll"
+    snd options.ReferencedProjects.[0] |> shouldEqual (getFSharpProjectOptions f1)
+
 
 [<Test>]
 let ``Project file parsing -- multi language project``() =
-  let f = normalizePath (__SOURCE_DIRECTORY__ + @"../../../test-data/MultiLanguageProject/ConsoleApplication1.fsproj")
+    let f = normalizePath (__SOURCE_DIRECTORY__ + @"../../../test-data/MultiLanguageProject/ConsoleApplication1.fsproj")
 
-  let options = getFSharpProjectOptions(f)
+    let options = getFSharpProjectOptions f
 
-  options.ReferencedProjects |> shouldHaveLength 1
-  options.ReferencedProjects.[0] |> fst |> shouldEndWith "ConsoleApplication2.exe"
+    options.ReferencedProjects |> shouldHaveLength 1
+    options.ReferencedProjects.[0] |> fst |> shouldEndWith "ConsoleApplication2.exe"
 
-  checkOption options.OtherOptions "ConsoleApplication2.exe"
-  checkOption options.OtherOptions "ConsoleApplication3.exe"
+    checkOption options.OtherOptions "ConsoleApplication2.exe"
+    checkOption options.OtherOptions "ConsoleApplication3.exe"
+
 
 [<Test>]
 let ``Project file parsing -- PCL profile7 project``() =
@@ -273,9 +300,9 @@ let ``Project file parsing -- PCL profile7 project``() =
 
     let options = getFSharpProjectOptions(f)
     let references =
-      options.OtherOptions
-      |> getReferencedFilenames
-      |> Set.ofArray
+        options.OtherOptions
+        |> getReferencedFilenames
+        |> Set.ofArray
     references
     |> shouldEqual
         (set [|"FSharp.Core.dll"; "Microsoft.CSharp.dll"; "Microsoft.VisualBasic.dll";
@@ -314,6 +341,7 @@ let ``Project file parsing -- PCL profile7 project``() =
 
     checkOption options.OtherOptions "--targetprofile:netcore"
 
+
 [<Test>]
 let ``Project file parsing -- PCL profile78 project``() =
 
@@ -321,9 +349,9 @@ let ``Project file parsing -- PCL profile78 project``() =
 
     let options = getFSharpProjectOptions(f)
     let references =
-      options.OtherOptions
-      |> getReferencedFilenames
-      |> Set.ofArray
+        options.OtherOptions
+        |> getReferencedFilenames
+        |> Set.ofArray
     references
     |> shouldEqual
         (set [|"FSharp.Core.dll"; "Microsoft.CSharp.dll"; "System.Collections.dll";
@@ -364,31 +392,33 @@ let ``Project file parsing -- PCL profile259 project``() =
       |> getReferencedFilenames
       |> Set.ofArray
     references
-    |> shouldEqual
-        (set [|"FSharp.Core.dll"; "Microsoft.CSharp.dll"; "System.Collections.dll";
-               "System.ComponentModel.EventBasedAsync.dll"; "System.ComponentModel.dll";
-               "System.Core.dll"; "System.Diagnostics.Contracts.dll";
-               "System.Diagnostics.Debug.dll"; "System.Diagnostics.Tools.dll";
-               "System.Dynamic.Runtime.dll"; "System.Globalization.dll"; "System.IO.dll";
-               "System.Linq.Expressions.dll"; "System.Linq.Queryable.dll"; "System.Linq.dll";
-               "System.Net.NetworkInformation.dll"; "System.Net.Primitives.dll";
-               "System.Net.Requests.dll"; "System.Net.dll"; "System.ObjectModel.dll";
-               "System.Reflection.Extensions.dll"; "System.Reflection.Primitives.dll";
-               "System.Reflection.dll"; "System.Resources.ResourceManager.dll";
-               "System.Runtime.Extensions.dll";
-               "System.Runtime.InteropServices.WindowsRuntime.dll";
-               "System.Runtime.Serialization.Json.dll";
-               "System.Runtime.Serialization.Primitives.dll";
-               "System.Runtime.Serialization.Xml.dll"; "System.Runtime.Serialization.dll";
-               "System.Runtime.dll"; "System.Security.Principal.dll";
-               "System.ServiceModel.Web.dll"; "System.Text.Encoding.Extensions.dll";
-               "System.Text.Encoding.dll"; "System.Text.RegularExpressions.dll";
-               "System.Threading.Tasks.dll"; "System.Threading.dll"; "System.Windows.dll";
-               "System.Xml.Linq.dll"; "System.Xml.ReaderWriter.dll";
-               "System.Xml.Serialization.dll"; "System.Xml.XDocument.dll";
-               "System.Xml.XmlSerializer.dll"; "System.Xml.dll"; "System.dll"; "mscorlib.dll"|])
-
+    |> shouldEqual (set 
+        [|  "FSharp.Core.dll"; "Microsoft.CSharp.dll"; "System.Collections.dll";
+            "System.ComponentModel.EventBasedAsync.dll"; "System.ComponentModel.dll";
+            "System.Core.dll"; "System.Diagnostics.Contracts.dll";
+            "System.Diagnostics.Debug.dll"; "System.Diagnostics.Tools.dll";
+            "System.Dynamic.Runtime.dll"; "System.Globalization.dll"; "System.IO.dll";
+            "System.Linq.Expressions.dll"; "System.Linq.Queryable.dll"; "System.Linq.dll";
+            "System.Net.NetworkInformation.dll"; "System.Net.Primitives.dll";
+            "System.Net.Requests.dll"; "System.Net.dll"; "System.ObjectModel.dll";
+            "System.Reflection.Extensions.dll"; "System.Reflection.Primitives.dll";
+            "System.Reflection.dll"; "System.Resources.ResourceManager.dll";
+            "System.Runtime.Extensions.dll";
+            "System.Runtime.InteropServices.WindowsRuntime.dll";
+            "System.Runtime.Serialization.Json.dll";
+            "System.Runtime.Serialization.Primitives.dll";
+            "System.Runtime.Serialization.Xml.dll"; "System.Runtime.Serialization.dll";
+            "System.Runtime.dll"; "System.Security.Principal.dll";
+            "System.ServiceModel.Web.dll"; "System.Text.Encoding.Extensions.dll";
+            "System.Text.Encoding.dll"; "System.Text.RegularExpressions.dll";
+            "System.Threading.Tasks.dll"; "System.Threading.dll"; "System.Windows.dll";
+            "System.Xml.Linq.dll"; "System.Xml.ReaderWriter.dll";
+            "System.Xml.Serialization.dll"; "System.Xml.XDocument.dll";
+            "System.Xml.XmlSerializer.dll"; "System.Xml.dll"; "System.dll"; "mscorlib.dll"
+        |]
+    )
     checkOption options.OtherOptions "--targetprofile:netcore"
+
 
 [<Test>]
 let ``Project file parsing -- Exe with a PCL reference``() =
@@ -428,34 +458,38 @@ let ``Project file parsing -- Exe with a PCL reference``() =
 //    // Check the reference is to a debug DLL
 //    references |> should contain ("Test1.dll", "Debug")
 
+
 [<Test>]
 let ``Project file parsing -- space in file name``() =
   let opts = getFSharpProjectOptions(__SOURCE_DIRECTORY__ + @"../../../test-data/Space in name.fsproj")
   CollectionAssert.AreEqual (["Test2File2.fs"; "Test2File1.fs"], opts.ProjectFileNames |> Array.map Path.GetFileName)
   CollectionAssert.IsEmpty (getCompiledFilenames opts.OtherOptions)
 
+
 [<Test>]
 let ``Project file parsing -- report files``() =
-  let programFilesx86Folder = System.Environment.GetEnvironmentVariable("PROGRAMFILES(X86)")
-  if not runningOnMono then
+    let programFilesx86Folder = System.Environment.GetEnvironmentVariable("PROGRAMFILES(X86)")
+    if not runningOnMono then
+        let dirRefs = programFilesx86Folder + @"\Reference Assemblies\Microsoft\FSharp\"
+        printfn "Enumerating %s" dirRefs
 
-   let dirRefs = programFilesx86Folder + @"\Reference Assemblies\Microsoft\FSharp\"
-   printfn "Enumerating %s" dirRefs
-   if Directory.Exists(dirRefs) then 
-    for f in Directory.EnumerateFiles(dirRefs,"*",SearchOption.AllDirectories) do 
-     printfn "File: %s" f
+        if Directory.Exists(dirRefs) then 
+            for f in Directory.EnumerateFiles(dirRefs,"*",SearchOption.AllDirectories) do 
+                printfn "File: %s" f
 
-   let dir40 = programFilesx86Folder + @"\Microsoft SDKs\F#\4.0\"
-   printfn "Enumerating %s" dir40
-   if Directory.Exists(dir40) then 
-    for f in Directory.EnumerateFiles(dir40,"*",SearchOption.AllDirectories) do 
-     printfn "File: %s" f
+        let dir40 = programFilesx86Folder + @"\Microsoft SDKs\F#\4.0\"
+        printfn "Enumerating %s" dir40
+        
+        if Directory.Exists(dir40) then 
+            for f in Directory.EnumerateFiles(dir40,"*",SearchOption.AllDirectories) do 
+                printfn "File: %s" f
 
-   let dir41 = programFilesx86Folder + @"\Microsoft SDKs\F#\4.1\"
-   printfn "Enumerating %s" dir41
-   if Directory.Exists(dir41) then 
-    for f in Directory.EnumerateFiles(dir41,"*",SearchOption.AllDirectories) do 
-     printfn "File: %s" f
+        let dir41 = programFilesx86Folder + @"\Microsoft SDKs\F#\4.1\"
+        printfn "Enumerating %s" dir41
+        
+        if Directory.Exists(dir41) then 
+            for f in Directory.EnumerateFiles(dir41,"*",SearchOption.AllDirectories) do 
+                printfn "File: %s" f
 
 
 
