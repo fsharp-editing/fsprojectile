@@ -7,6 +7,7 @@ open System.Runtime.Versioning
 open Microsoft.Build
 open Microsoft.Build.Evaluation
 open Microsoft.Build.Execution
+open System.Xml.Linq
 
 
 [<AutoOpen>]
@@ -120,15 +121,64 @@ module ProjectFileInfo =
                    .Equals(ItemName.ProjectReference, StringComparison.OrdinalIgnoreCase)
 
 
-    let create (projectFilePath:string) =
+
+    let internal projectCollection = new ProjectCollection()
+
+    let internal loadProject (projectFilePath:string) =
+        let projectFilePath = Path.GetFullPath projectFilePath
         if not (File.Exists projectFilePath) then failwithf "No project file found at '%s'" projectFilePath else
 
+        let projXDoc = XDocument.Load(projectFilePath)
+
+        let toolsVersion =  
+            match XDoc.tryGetElement "Project" projXDoc with
+            | None -> "15.0"
+            | Some xelem -> xelem |> XElem.getAttribute "ToolsVersion" |> XAttr.value
+
+//        let toolsVersion =  
+//            if toolsVersion <> "15.0" then "14.0" else "15.0"
+
+        projectCollection.LoadProject(projectFilePath,dict[],toolsVersion)
+        
+    let getProjectOutputFromPath (projectFilePath:string) =
+        let proj = loadProject projectFilePath
+        (proj.GetProperty "TargetPath").EvaluatedValue
+        |> Path.GetFullPath
+      
+    let printConditioned projectFilePath = 
+        let project = loadProject projectFilePath
+
+        project.ConditionedProperties
+        |> Seq.filter ^ fun kvp -> kvp.Key = "Configuration" || kvp.Key = "Platform"
+        |> Seq.iter ^ fun kvp -> printfn  "%s - \n    %s" kvp.Key (String.concat "; " kvp.Value)
+
+    let internal getCondProperty projectFilePath propName =
+        let project = loadProject projectFilePath
+        project.ConditionedProperties
+        |> Seq.filter ^ fun kvp -> kvp.Key = propName
+        |> Seq.map ^ fun kvp -> kvp.Value |> Seq.toList
+
+    let getConfigurations projectFilePath = 
+        let configs = getCondProperty projectFilePath "Configuration"
+        projectCollection.UnloadAllProjects()
+        configs
+
+    let getPlatforms projectFilePath = 
+        let platforms = getCondProperty projectFilePath "Platform"
+        projectCollection.UnloadAllProjects()
+        platforms
+
+    let rec create (projectFilePath:string) =
+
+        let project = loadProject projectFilePath
+
         let manager = BuildManager.DefaultBuildManager
-
-        let buildParam = BuildParameters(DetailedSummary=true)
-        let project = Project projectFilePath
+        let buildParam = BuildParameters(DetailedSummary=true) 
+        
         let projectInstance = project.CreateProjectInstance()
-
+        
+        let projName = Path.GetFileName projectFilePath
+        printfn "Evaluating '%s'using MSBuild %s" projName projectInstance.ToolsVersion
 
         let requestReferences =
             BuildRequestData (projectInstance,
@@ -136,10 +186,6 @@ module ProjectFileInfo =
                     "ResolveProjectReferences"
                     "ResolveReferenceDependencies"
                 |])
-
-//        let fromBuildRes (targetName:string) (result:BuildResult) =
-//            if not ^ result.ResultsByTarget.ContainsKey targetName then [||] else
-//            result.ResultsByTarget.[targetName].Items
 
         let result = manager.Build(buildParam,requestReferences)
 
@@ -152,19 +198,30 @@ module ProjectFileInfo =
             else
                 [||]
 
-        let projectReferences = fromBuildRes "ResolveProjectReferences"
+        let references =
+            projectInstance.GetItems ItemName.ReferencePath
+            |> Seq.filter (not<<isProjectReference)
+            |> Seq.map getFullPath
 
-        let references = fromBuildRes "ResolveAssemblyReferences"
+        let projectReferences =
+            projectInstance.GetItems ItemName.ProjectReference
+            |> Seq.filter isProjectReference
+            |> Seq.map getFullPath
+
+        let projectReferenceOutputPaths =
+            projectReferences |> Seq.map getProjectOutputFromPath
+
+        let allReferences = Seq.append references projectReferenceOutputPaths
 
         let getItems itemType =
-            if project.ItemTypes.Contains itemType then
+            if projectInstance.ItemTypes.Contains itemType then
                 project.GetItems itemType
                 |> Seq.map(fun item -> item.EvaluatedInclude)
             else
                 Seq.empty
 
         let getProperty propName =
-            let s = project.GetPropertyValue propName
+            let s = projectInstance.GetPropertyValue propName
             if  String.IsNullOrWhiteSpace s then None
             else Some s
 
@@ -291,8 +348,8 @@ module ProjectFileInfo =
             yield! otherFlags
             yield! Seq.map((+)"--resource:") resources
             yield! Seq.map((+)"--lib:") libPaths
-            yield! Seq.map((+)"--r:") references
-            yield! files
+            yield! Seq.map((+)"-r:") allReferences
+            //yield! files
         ]
 
         let getItemPaths itemName =
@@ -314,15 +371,15 @@ module ProjectFileInfo =
         let scriptFiles  =
             filterItemPaths (fun x -> isScriptFile x.EvaluatedInclude) ItemName.None
 
-        let references =
-            projectInstance.GetItems ItemName.ReferencePath
-            |> Seq.filter (not<<isProjectReference)
-            |> Seq.map getFullPath
-
-        let projectReferences =
-            projectInstance.GetItems ItemName.ProjectReference
-            |> Seq.filter isProjectReference
-            |> Seq.map getFullPath
+//        let references =
+//            projectInstance.GetItems ItemName.ReferencePath
+//            |> Seq.filter (not<<isProjectReference)
+//            |> Seq.map getFullPath
+//
+//        let projectReferences =
+//            projectInstance.GetItems ItemName.ProjectReference
+//            |> Seq.filter isProjectReference
+//            |> Seq.map getFullPath
 
         let analyzers = getItemPaths ItemName.Analyzer
 
@@ -344,6 +401,9 @@ module ProjectFileInfo =
         let signAssembly    = PropertyConverter.toBoolean <| projectInstance.GetPropertyValue Property.SignAssembly
         let outputType      = OutputType.Parse <| projectInstance.GetPropertyValue Property.OutputType
         let xmlDocs         = projectInstance.TryGetPropertyValue Property.DocumentationFile
+
+
+        projectCollection.UnloadAllProjects()
 
         {   ProjectFilePath           = projectFilePath
             ProjectGuid               = projectGuid
@@ -416,17 +476,6 @@ module ProjectFileInfo =
             }
         let fsprojOptions = generate projInfo
         fsprojOptions, projInfoDict
-
-
-
-[<AutoOpen>]
-module Utility =
-
-    let getFSharpProjectOptions (projectPath:string) =
-        ProjectFileInfo.create projectPath
-        |> ProjectFileInfo.toFSharpProjectOptions (Dictionary())
-        |> fst
-
 
 
 
