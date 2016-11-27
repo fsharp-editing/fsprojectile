@@ -32,10 +32,11 @@ let getFSharpProjectOptions (projectPath:string) =
 let doit = true
 let parseAlways = 
     if doit then
-        [|  @"..\..\test-data\Sample_VS2013_FSharp_Portable_Library_net451_adjusted_to_profile259\Sample_VS2013_FSharp_Portable_Library_net451.fsproj"
-            @"..\..\test-data\Sample_VS2015_FSharp_Portable7_Library\Sample_VS2015_FSharp_Portable7_Library.fsproj"
+        [|  //@"..\..\test-data\Sample_VS2013_FSharp_Portable_Library_net451_adjusted_to_profile259\Sample_VS2013_FSharp_Portable_Library_net451.fsproj"
+            //@"..\..\test-data\Sample_VS2015_FSharp_Portable7_Library\Sample_VS2015_FSharp_Portable7_Library.fsproj"
 //            @"..\..\test-data\Sample_VS2015_FSharp_Portable47_Library\Sample_VS2015_FSharp_Portable47_Library.fsproj"
 //            @"..\..\test-data\Sample_VS2015_FSharp_Portable78_Library\Sample_VS2015_FSharp_Portable78_Library.fsproj"
+            @"C:\Users\jared\github\Owned\fsprojectile\test-data\Test2.fsproj"
         |]
     else
         [||]
@@ -74,6 +75,7 @@ let main argv =
                     printfn "-- %s --\n" path
                     //fullpath path |> printConditioned
                     fullpath path |> getFSharpProjectOptions  |> printfn "\n%A\n"
+//                    fullpath path |> getProjectFileInfo  |> printfn "\n%A\n"
                 with
                 | ex -> 
                     printfn "Unable to inspect project - '%s'\n%s\n" path ex.Message

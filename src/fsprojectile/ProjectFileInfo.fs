@@ -137,8 +137,12 @@ module ProjectFileInfo =
 
 //        let toolsVersion =  
 //            if toolsVersion <> "15.0" then "14.0" else "15.0"
+        let globalProps = 
+            dict [
+                "BuildingInsideVisualStudio", "true" // necessary to force the resolution of references in projects with project references
+            ]
 
-        projectCollection.LoadProject(projectFilePath,dict[],toolsVersion)
+        projectCollection.LoadProject(projectFilePath,globalProps,toolsVersion)
         
     let getProjectOutputFromPath (projectFilePath:string) =
         let proj = loadProject projectFilePath
@@ -168,11 +172,11 @@ module ProjectFileInfo =
         projectCollection.UnloadAllProjects()
         platforms
 
-    let rec create (projectFilePath:string) =
+    let create (projectFilePath:string) =
 
         let project = loadProject projectFilePath
 
-        let manager = BuildManager.DefaultBuildManager
+        use manager = BuildManager.DefaultBuildManager
         let buildParam = BuildParameters(DetailedSummary=true) 
         
         let projectInstance = project.CreateProjectInstance()
@@ -181,38 +185,24 @@ module ProjectFileInfo =
         printfn "Evaluating '%s'using MSBuild %s" projName projectInstance.ToolsVersion
 
         let requestReferences =
-            BuildRequestData (projectInstance,
+            BuildRequestData(projectInstance,
                 [|  "ResolveReferences"
-                    "ResolveAssemblyReferences"
                     "ResolveProjectReferences"
-                    "ResolveReferenceDependencies"
+                    "ResolveAssemblyReferences"
+                    "ResolveReferenceDependencies"                    
                 |])
 
-        let result = manager.Build(buildParam,requestReferences)
-
-
-        let fromBuildRes targetName =
-            if result.ResultsByTarget.ContainsKey targetName then
-                result.ResultsByTarget.[targetName].Items
-                |> Seq.map(fun r -> r.ItemSpec)
-                |> Array.ofSeq
-            else
-                [||]
+        manager.Build (buildParam,requestReferences) |> ignore
         
         let references =
             projectInstance.GetItems ItemName.ReferencePath
-            |> Seq.filter (not<<isProjectReference)
-            |> Seq.map getFullPath
-
+            |> Seq.append ^ projectInstance.GetItems ItemName.ChildProjectReferences            
+            |> Seq.map ^ fun item -> item.EvaluatedInclude
+       
         let projectReferences =
             projectInstance.GetItems ItemName.ProjectReference
             |> Seq.filter isProjectReference
             |> Seq.map getFullPath
-
-        let projectReferenceOutputPaths =
-            projectReferences |> Seq.map getProjectOutputFromPath
-
-        let allReferences = Seq.append references projectReferenceOutputPaths
 
         let getItems itemType =
             if projectInstance.ItemTypes.Contains itemType then
@@ -277,13 +267,6 @@ module ProjectFileInfo =
             | None -> false
             | Some prop -> prop ="Library"
 
-        let pages = getItems "Page"
-        let embeddedResources = getItems "EmbeddedResource"
-        let files = getItems "Compile"
-        let resources = getItems "Resource"
-        let noaction = getItems "None"
-        let content = getItems "Content"
-
 
         let fscFlag  str (opt:string option) = seq{
             match  opt with
@@ -295,6 +278,11 @@ module ProjectFileInfo =
             for x in ls do
                 if not (String.IsNullOrWhiteSpace x) then yield flag + x
         }
+
+        
+        let resources = getItems ItemName.Resource
+        
+        let sourceFiles = getItems ItemName.Compile
 
         let options = [
             yield "--simpleresolution"
@@ -349,8 +337,8 @@ module ProjectFileInfo =
             yield! otherFlags
             yield! Seq.map((+)"--resource:") resources
             yield! Seq.map((+)"--lib:") libPaths
-            yield! Seq.map((+)"-r:") allReferences
-            //yield! files
+            yield! Seq.map((+)"-r:") references
+            //yield! sourceFiles
         ]
 
         let getItemPaths itemName =
@@ -364,7 +352,7 @@ module ProjectFileInfo =
         let isScriptFile path =
             String.equalsIC (path |> Path.GetExtension) ".fsx"
 
-        let sourceFiles = getItemPaths ItemName.Compile
+        
 
         let otherFiles  =
             filterItemPaths (fun x -> not ^ isScriptFile x.EvaluatedInclude) ItemName.None
@@ -372,15 +360,9 @@ module ProjectFileInfo =
         let scriptFiles  =
             filterItemPaths (fun x -> isScriptFile x.EvaluatedInclude) ItemName.None
 
-//        let references =
-//            projectInstance.GetItems ItemName.ReferencePath
-//            |> Seq.filter (not<<isProjectReference)
-//            |> Seq.map getFullPath
-//
-//        let projectReferences =
-//            projectInstance.GetItems ItemName.ProjectReference
-//            |> Seq.filter isProjectReference
-//            |> Seq.map getFullPath
+        let content = getItems ItemName.Content
+        let pages = getItems ItemName.Page
+        let embeddedResources = getItems ItemName.EmbeddedResource
 
         let analyzers = getItemPaths ItemName.Analyzer
 
@@ -388,11 +370,9 @@ module ProjectFileInfo =
             projectInstance.TryGetPropertyValue Property.ProjectGuid
             |> Option.bind PropertyConverter.toGuid
 
-
         let defineConstants =
             projectInstance.GetPropertyValue Property.DefineConstants
             |> PropertyConverter.toDefineConstants
-
 
         let projectName     = projectInstance.TryGetPropertyValue Property.ProjectName
         let assemblyName    = projectInstance.GetPropertyValue Property.AssemblyName
@@ -402,10 +382,7 @@ module ProjectFileInfo =
         let signAssembly    = PropertyConverter.toBoolean <| projectInstance.GetPropertyValue Property.SignAssembly
         let outputType      = OutputType.Parse <| projectInstance.GetPropertyValue Property.OutputType
         let xmlDocs         = projectInstance.TryGetPropertyValue Property.DocumentationFile
-
-
-        projectCollection.UnloadAllProjects()
-
+        
         {   ProjectFilePath           = projectFilePath
             ProjectGuid               = projectGuid
             Name                      = projectName
@@ -448,7 +425,8 @@ module ProjectFileInfo =
                 let existingProjectRefPaths, newProjectRefPaths =
                     // check the projInfoDict (all the projects in the workspace/solution) for a referenced project
                     projInfo.ProjectReferences
-                    |> Array.partition^ fun projRefPath -> Dict.contains projRefPath projInfoDict
+                    |> Array.filter ^ fun projRefPath -> projRefPath.EndsWith ".fsproj"
+                    |> Array.partition ^ fun projRefPath -> Dict.contains projRefPath projInfoDict
 
                 // this will ensure all projects exist in the projInfoDict with corresponding projectFileInfo
                 newProjectRefPaths

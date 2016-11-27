@@ -367,8 +367,9 @@ Target "All" DoNothing
 
 // "AssemblyInfo"
 //   ==> 
-"Build"
-  ==> "CopyBinaries"
+"Clean"
+  ==> "Build"
+//  ==> "CopyBinaries"
   ==> "RunTests"
   ==> "GenerateReferenceDocs"
   ==> "GenerateDocs"

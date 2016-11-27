@@ -15,33 +15,33 @@ NUGET
       System.Runtime.InteropServices (>= 4.1) - framework: >= net46
       System.Threading (>= 4.0.11) - framework: >= net46
       System.Threading.Thread (>= 4.0) - framework: >= net46
-    Microsoft.Build.Runtime (15.1.0-preview-000370-00)
+    Microsoft.Build.Runtime (15.1.0-preview-000370-00) - copy_content_to_output_dir: always
       Microsoft.Build (15.1.0-preview-000370-00) - framework: >= net46
       Microsoft.Build.Framework (15.1.0-preview-000370-00) - framework: >= net46
       Microsoft.Build.Tasks.Core (15.1.0-preview-000370-00) - framework: >= net46
       Microsoft.Build.Utilities.Core (15.1.0-preview-000370-00) - framework: >= net46
-    Microsoft.Build.Tasks.Core (15.1.0-preview-000370-00) - framework: >= net46
+    Microsoft.Build.Tasks.Core (15.1.0-preview-000370-00) - copy_content_to_output_dir: always, framework: >= net46
       Microsoft.Build.Framework (15.1.0-preview-000370-00) - framework: >= net46
       Microsoft.Build.Utilities.Core (15.1.0-preview-000370-00) - framework: >= net46
-    Microsoft.Build.Utilities.Core (15.1.0-preview-000370-00)
+    Microsoft.Build.Utilities.Core (15.1.0-preview-000370-00) - copy_content_to_output_dir: always
       Microsoft.Build.Framework (15.1.0-preview-000370-00) - framework: >= net46
     NUnit (3.5)
-    System.Collections (4.3) - framework: >= net46
+    System.Collections (4.3)
     System.Collections.Immutable (1.2)
-    System.Diagnostics.Debug (4.3) - framework: >= net46
-    System.Globalization (4.3) - framework: >= net46
+    System.Diagnostics.Debug (4.3)
+    System.Globalization (4.3)
     System.Reflection.Metadata (1.4.1-beta-24430-01)
       System.Collections.Immutable (>= 1.2) - framework: >= net45
     System.Runtime (4.3)
-    System.Runtime.InteropServices (4.3) - framework: >= net46
+    System.Runtime.InteropServices (4.3)
       System.Runtime (>= 4.3) - framework: >= net462
-    System.Threading (4.3) - framework: >= net46
-    System.Threading.Thread (4.3) - framework: >= net46
+    System.Threading (4.3)
+    System.Threading.Thread (4.3)
 
 GROUP Build
 NUGET
   remote: https://www.nuget.org/api/v2
-    FAKE (4.45.2)
+    FAKE (4.45.3)
     FSharp.Compiler.Service (2.0.0.6)
     FSharp.Formatting (2.14.4)
       FSharp.Compiler.Service (2.0.0.6)
@@ -59,7 +59,7 @@ NUGET
     SourceLink.Fake (1.1)
 GITHUB
   remote: fsharp/FAKE
-    modules/Octokit/Octokit.fsx (eaf899a7be2e2c0cb5c00a022f19f67c2d2c337e)
+    modules/Octokit/Octokit.fsx (3121e610f04d4c9839f44326ab4ca02e28eb15a2)
       Octokit (>= 0.20)
 GROUP Test
 NUGET

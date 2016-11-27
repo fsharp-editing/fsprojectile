@@ -28,6 +28,16 @@ open Microsoft.FSharp.Compiler.SourceCodeServices
 open fsprojectile
 
 
+
+(*  TODO
+    - add tests for netcore projects
+    - add tests for multiframework fsproj vnext
+    - add tests for multiframework set to a specific framework
+*)
+
+
+let checker = FSharpChecker.Create()
+
 let normalizePath s = (new Uri(s)).LocalPath
 
 let checkOption (opts:string[]) s = 
@@ -38,8 +48,8 @@ let checkOption (opts:string[]) s =
 
 
 let checkOptionNotPresent (opts:string[]) s = 
-    let found = "Found '"+s+"'"
-    let notFound = "Did not expect to find '"+s+"'"
+    let found = sprintf "Found '%s'" s
+    let notFound = sprintf "Did not expect to find '%s'" s
     (if opts |> Array.exists (fun o -> o.EndsWith s) then found else notFound)
        |> shouldEqual notFound
 
@@ -66,15 +76,6 @@ let getOutputFile =
         else None
 
 
-#if INTERACTIVE
-;;
-let p = getFSharpProjectOptions(__SOURCE_DIRECTORY__ + @"../../../test-data/Test2.fsproj")
-
-let references = getReferencedFilenames p.OtherOptions
-
-#endif
-
-
 let getCompiledFilenames = 
     Array.choose (fun (opt: string) -> 
         if opt.EndsWith ".fs" then 
@@ -84,10 +85,10 @@ let getCompiledFilenames =
 
 [<Test>]
 let ``Project file parsing example 1 Default Configuration`` () = 
-    let projectFile = __SOURCE_DIRECTORY__ + @"../../../test-data/FSharp.Compiler.Service.Tests.fsproj"
+    let projectFile = __SOURCE_DIRECTORY__ + @"../../../tests/fsprojectile.tests/fsprojectile.Tests.fsproj"
     let options = getFSharpProjectOptions projectFile
 
-    checkOption options.ProjectFileNames "FileSystemTests.fs"
+    checkOption options.ProjectFileNames "FsUnit.fs"
     
     checkOption options.OtherOptions "FSharp.Compiler.Service.dll"
     checkOption options.OtherOptions "--define:TRACE"
@@ -97,10 +98,10 @@ let ``Project file parsing example 1 Default Configuration`` () =
     checkOption options.OtherOptions "--noframework"
 
 
-//[<Test>]
-//let ``Project file parsing example 1 Release Configuration`` () = 
-//    let projectFile = __SOURCE_DIRECTORY__ + @"/FSharp.Compiler.Service.Tests.fsproj"
-//    // Check with Configuration = Release
+[<Test>][<Ignore "build with config not implemented">]
+let ``Project file parsing example 1 Release Configuration`` () = 
+    let projectFile = __SOURCE_DIRECTORY__ + @"/FSharp.Compiler.Service.Tests.fsproj"
+    // Check with Configuration = Release
 //    let options = getFSharpProjectOptions (projectFile, [("Configuration", "Release")])
 //
 //    checkOption options.ProjectFileNames "FileSystemTests.fs"
@@ -109,15 +110,16 @@ let ``Project file parsing example 1 Default Configuration`` () =
 //    checkOption options.OtherOptions "--define:TRACE"
 //    checkOptionNotPresent options.OtherOptions "--define:DEBUG"
 //    checkOption options.OtherOptions "--debug:pdbonly"
+    ()
 
 
 [<Test>]
 let ``Project file parsing example 1 Default configuration relative path`` () = 
-    let projectFile = "FSharp.Compiler.Service.Tests.fsproj"
+    let projectFile = "fsprojectile.Tests.fsproj"
     Directory.SetCurrentDirectory(__SOURCE_DIRECTORY__)
     let options = getFSharpProjectOptions(projectFile)
 
-    checkOption options.ProjectFileNames "FileSystemTests.fs"
+    checkOption options.ProjectFileNames "FsUnit.fs"
 
     checkOption options.OtherOptions "FSharp.Compiler.Service.dll"
     checkOption options.OtherOptions "--define:TRACE"
@@ -172,17 +174,20 @@ let ``Project file parsing -- compile files 2``() =
     CollectionAssert.IsEmpty (getCompiledFilenames opts.OtherOptions)
 
 
-//[<Test>]
-//let ``Project file parsing -- bad project file``() =
-//  let f = normalizePath (__SOURCE_DIRECTORY__ + @"../../../test-data/Malformed.fsproj")
-//  let log = snd (getFSharpProjectOptionsLogged(f))
-//  log.[f] |> should contain "Microsoft.Build.Exceptions.InvalidProjectFileException"
-//
-//[<Test>]
-//let ``Project file parsing -- non-existent project file``() =
-//  let f = normalizePath (__SOURCE_DIRECTORY__ + @"../../../test-data/DoesNotExist.fsproj")
-//  let log = snd (getFSharpProjectOptionsLogged(f, enableLogging=true))
-//  log.[f] |> should contain "System.IO.FileNotFoundException"
+[<Test>][<Ignore "logging not implemented">]
+let ``Project file parsing -- bad project file``() =
+    let f = normalizePath (__SOURCE_DIRECTORY__ + @"../../../test-data/Malformed.fsproj")
+//    let log = snd (getFSharpProjectOptionsLogged(f))
+//    log.[f] |> should contain "Microsoft.Build.Exceptions.InvalidProjectFileException"
+    ()
+
+
+[<Test>][<Ignore "logging not implemented">]
+let ``Project file parsing -- non-existent project file``() =
+    let f = normalizePath (__SOURCE_DIRECTORY__ + @"../../../test-data/DoesNotExist.fsproj")
+//    let log = snd (getFSharpProjectOptionsLogged(f, enableLogging=true))
+//    log.[f] |> should contain "System.IO.FileNotFoundException"
+    ()
 
 
 [<Test>]
@@ -190,7 +195,7 @@ let ``Project file parsing -- output file``() =
     let p = getFSharpProjectOptions ^ __SOURCE_DIRECTORY__ + @"../../../test-data/Test1.fsproj"
 
     let expectedOutputPath =
-        normalizePath ^ __SOURCE_DIRECTORY__ + "/data/Test1/bin/Debug/Test1.dll"
+        normalizePath ^ __SOURCE_DIRECTORY__ + @"../../../test-data/Test1/bin/Debug/Test1.dll"
 
     p.OtherOptions
     |> getOutputFile
@@ -247,14 +252,14 @@ let ``Project file parsing -- reference project output file``() =
 [<Test>]
 let ``Project file parsing -- Tools Version 12``() =
     let opts = getFSharpProjectOptions ^ __SOURCE_DIRECTORY__ + @"../../../test-data/ToolsVersion12.fsproj"
-    checkOption (getReferencedFilenames opts.OtherOptions) "System.Core.dll"
-//
-//[<Test>]
-//let ``Project file parsing -- Logging``() =
-//  let projectFileName = normalizePath (__SOURCE_DIRECTORY__ + @"../../../test-data/ToolsVersion12.fsproj")
-//  let _, logMap = getFSharpProjectOptionsLogged(projectFileName, enableLogging=true)
-//  let log = logMap.[projectFileName]
+    checkOption (getReferencedFilenames opts.OtherOptions ) "System.Core.dll"
 
+
+[<Test>][<Ignore "logging not implemented">]
+let ``Project file parsing -- Logging``() =
+    let projectFileName = normalizePath (__SOURCE_DIRECTORY__ + @"../../../test-data/ToolsVersion12.fsproj")
+//    let _, logMap = getFSharpProjectOptionsLogged(projectFileName, enableLogging=true)
+//    let log = logMap.[projectFileName]
     if runningOnMono then
         Assert.That(log, Does.Contain "Reference System.Core resolved")
         Assert.That(log, Does.Contain "Using task ResolveAssemblyReference from Microsoft.Build.Tasks.ResolveAssemblyReference")
@@ -277,7 +282,12 @@ let ``Project file parsing -- project references``() =
 
     options.ReferencedProjects |> shouldHaveLength 1
     fst options.ReferencedProjects.[0] |> shouldEndWith "Test1.dll"
-    snd options.ReferencedProjects.[0] |> shouldEqual (getFSharpProjectOptions f1)
+    let p1 = snd options.ReferencedProjects.[0] 
+    let p2 = getFSharpProjectOptions f1 
+    p1.ProjectFileName    |> shouldEqual p2.ProjectFileName
+    p1.ProjectFileNames   |> shouldEqual p2.ProjectFileNames
+    p1.OtherOptions       |> shouldEqual p2.OtherOptions
+    p1.ReferencedProjects |> shouldEqual p2.ReferencedProjects
 
 
 [<Test>]
@@ -420,44 +430,26 @@ let ``Project file parsing -- PCL profile259 project``() =
     checkOption options.OtherOptions "--targetprofile:netcore"
 
 
-[<Test>]
-let ``Project file parsing -- Exe with a PCL reference``() =
-
-    let f = normalizePath(__SOURCE_DIRECTORY__ + @"../../../test-data/sqlite-net-spike/sqlite-net-spike.fsproj")
-
-    let p = getFSharpProjectOptions(f)
-    let references = getReferencedFilenames p.OtherOptions |> set
-    references |> shouldContain "FSharp.Core.dll"
-    references |> shouldContain "SQLite.Net.Platform.Generic.dll"
-    references |> shouldContain "SQLite.Net.Platform.Win32.dll"
-    references |> shouldContain "SQLite.Net.dll"
-    references |> shouldContain "System.Collections.Concurrent.dll"
-    references |> shouldContain "System.Linq.Queryable.dll"
-    references |> shouldContain "System.Resources.ResourceManager.dll"
-    references |> shouldContain "System.Threading.dll"
-    references |> shouldContain "System.dll"
-    references |> shouldContain "mscorlib.dll"
-    references |> shouldContain "System.Reflection.dll"
-    references |> shouldContain "System.Reflection.Emit.Lightweight.dll"
 
 
-//[<Test>]
-//let ``Project file parsing -- project file contains project reference to out-of-solution project and is used in release mode``() =
-//    let projectFileName = normalizePath(__SOURCE_DIRECTORY__ + @"../../../test-data/Test2.fsproj")
+[<Test>][<Ignore "build with config not implemented">]
+let ``Project file parsing -- project file contains project reference to out-of-solution project and is used in release mode``() =
+    let projectFileName = normalizePath(__SOURCE_DIRECTORY__ + @"../../../test-data/Test2.fsproj")
 //    let opts = getFSharpProjectOptions(projectFileName,[("Configuration","Release")])
 //    let references = getReferencedFilenamesAndContainingFolders opts.OtherOptions |> set
-//    // Check the reference is to a release DLL
-//    references |> should contain ("Test1.dll", "Release")
-//
-//[<Test>]
-//let ``Project file parsing -- project file contains project reference to out-of-solution project and is used in debug mode``() =
-//
-//    let projectFileName = normalizePath(__SOURCE_DIRECTORY__ + @"../../../test-data/Test2.fsproj")
+    // Check the reference is to a release DLL
+//    references |> shouldContain ("Test1.dll", "Release")
+    ()
+
+[<Test>][<Ignore "build with config not implemented">]
+let ``Project file parsing -- project file contains project reference to out-of-solution project and is used in debug mode``() =
+
+    let projectFileName = normalizePath(__SOURCE_DIRECTORY__ + @"../../../test-data/Test2.fsproj")
 //    let opts = getFSharpProjectOptions(projectFileName,[("Configuration","Debug")])
 //    let references = getReferencedFilenamesAndContainingFolders opts.OtherOptions |> set
-//    // Check the reference is to a debug DLL
-//    references |> should contain ("Test1.dll", "Debug")
-
+    // Check the reference is to a debug DLL
+//    references |> shouldContain ("Test1.dll", "Debug")
+    ()
 
 [<Test>]
 let ``Project file parsing -- space in file name``() =
@@ -493,24 +485,24 @@ let ``Project file parsing -- report files``() =
 
 
 
-//[<Test>]
-//let ``Test ProjectFileNames order for GetProjectOptionsFromScript`` () = // See #594
-//    let test scriptName expected =
-//        let scriptPath = __SOURCE_DIRECTORY__ + @"../../../test-data/ScriptProject/" + scriptName + ".fsx"
-//        let scriptSource = File.ReadAllText scriptPath
-//        let projOpts =
-//            checker.GetProjectOptionsFromScript(scriptPath, scriptSource)
-//            |> Async.RunSynchronously
-//        projOpts.ProjectFileNames
-//        |> Array.map Path.GetFileNameWithoutExtension
-//        |> (=) expected
-//        |> shouldEqual true
-//    test "Main1" [|"BaseLib1"; "Lib1"; "Lib2"; "Main1"|]
-//    test "Main2" [|"BaseLib1"; "Lib1"; "Lib2"; "Lib3"; "Main2"|]
-//    test "Main3" [|"Lib3"; "Lib4"; "Main3"|]
-//    test "Main4" [|"BaseLib2"; "Lib5"; "BaseLib1"; "Lib1"; "Lib2"; "Main4"|]
-//
-//
+[<Test>][<Ignore "Script project options implemented">]
+let ``Test ProjectFileNames order for GetProjectOptionsFromScript`` () = // See #594
+    let test scriptName expected =
+        let scriptPath = __SOURCE_DIRECTORY__ + @"../../../test-data/ScriptProject/" + scriptName + ".fsx"
+        let scriptSource = File.ReadAllText scriptPath
+        let projOpts =
+            checker.GetProjectOptionsFromScript(scriptPath, scriptSource)
+            |> Async.RunSynchronously
+        projOpts.ProjectFileNames
+        |> Array.map Path.GetFileNameWithoutExtension
+        |> (=) expected
+        |> shouldEqual true
+    test "Main1" [|"BaseLib1"; "Lib1"; "Lib2"; "Main1"|]
+    test "Main2" [|"BaseLib1"; "Lib1"; "Lib2"; "Lib3"; "Main2"|]
+    test "Main3" [|"Lib3"; "Lib4"; "Main3"|]
+    test "Main4" [|"BaseLib2"; "Lib5"; "BaseLib1"; "Lib1"; "Lib2"; "Main4"|]
+
+
 
 
 #if INTERACTIVE
