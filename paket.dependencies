@@ -1,10 +1,13 @@
 source https://www.nuget.org/api/v2
 redirects: force
+framework: >= net40
 
 nuget FSharp.Core
 nuget FSharp.Compiler.Service
 nuget Microsoft.Build           preview
-nuget Microsoft.Build.Runtime   preview
+nuget Microsoft.Build.Runtime 15.1.0-preview-000370-00 preview copy_content_to_output_dir: always
+nuget NUnit
+nuget System.Collections.Immutable 1.2.0
 
 group Build
   source https://nuget.org/api/v2
